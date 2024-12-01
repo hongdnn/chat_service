@@ -1,0 +1,38 @@
+{
+  "name": "chat_service",
+  "version": "1.0.0",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/app.ts",
+    "start": "ts-node src/app.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@types/mongoose-paginate-v2": "^1.6.5",
+    "@types/node": "^22.5.2",
+    "axios": "^1.7.5",
+    "bcryptjs": "^2.4.3",
+    "celebrate": "^15.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "inversify": "^6.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.8.0",
+    "mongoose": "^8.5.4",
+    "mongoose-paginate-v2": "^1.8.3",
+    "nodemon": "^3.1.4",
+    "socket.io": "^4.8.0",
+    "ts-node": "^10.9.2",
+    "uniqid": "^5.4.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/express": "^4.17.21",
+    "@types/mongoose-paginate-v2": "^1.6.5",
+    "reflect-metadata": "^0.2.2",
+    "typescript": "^5.5.4"
+  }
+}
