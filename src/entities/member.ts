@@ -7,7 +7,7 @@ export class Member {
     _id: string
     conversation_id: string
     user_id: string
-    joined_time: string
+    joined_time: Date
     left_time: string
     is_admin: boolean
     nick_name: string
@@ -39,7 +39,7 @@ const memberSchema = new Schema({
         require: true
     },
     joined_time: {
-        type: String,
+        type: Date,
         require: true
     },
     left_time: {

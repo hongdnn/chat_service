@@ -3,6 +3,7 @@ import cors from 'cors'
 import { errors } from 'celebrate'
 import { userRouter } from '../controllers/routes/user.route'
 import { conversationRouter } from '../controllers/routes/conversation.route'
+import { authenticate } from '../middlewares/middleware'
 
 export class ExpressLoader {
     constructor() {}
@@ -14,7 +15,7 @@ export class ExpressLoader {
         //user
         app.use('/users', userRouter)
         //conversation
-        app.use('/conversations', conversationRouter)
+        app.use('/conversations', authenticate, conversationRouter)
 
         //middleware error
         app.use(errors())

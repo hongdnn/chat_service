@@ -1,4 +1,4 @@
-import { Document, PaginateModel, Schema, model } from "mongoose"
+import { Date, Document, PaginateModel, Schema, model } from "mongoose"
 import paginate from "mongoose-paginate-v2"
 
 
@@ -22,8 +22,8 @@ export class Message {
     message: string
     conversation_id: string
     user_id: string
-    created_date: string
-    updated_date: string
+    created_date: Date
+    updated_date: Date
     status: number
     message_type: string
 

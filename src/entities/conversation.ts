@@ -1,5 +1,5 @@
 
-import { Document, PaginateModel, Schema, model } from 'mongoose';
+import { Date, Document, PaginateModel, Schema, model } from 'mongoose';
 import paginate from 'mongoose-paginate-v2';
 
 const ConversationStatus = {
@@ -17,10 +17,10 @@ export class Conversation {
     conversation_name: string
     status: number
     image: string
-    created_date: string
+    created_date: Date
     conversation_type: number
     user_ids: Array<string>
-    latest_message_time: string
+    latest_message_time: Date
 
     constructor(dto: any){
         this._id = dto._id
@@ -55,8 +55,8 @@ const conversationSchema = new Schema({
         require: true
     },
     latest_message_time: {
-        type: String,
-        default: () => new Date().toISOString()
+        type: Date,
+        default: () => new Date()
     },
 }, { timestamps: { createdAt: 'created_date' } })
 

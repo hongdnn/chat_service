@@ -13,7 +13,7 @@ export interface IConversationService {
     createConversation(senderId: string, receiverIds: string[], conversationName?: string): Promise<{ data: any, status: number, message: string }>
     getPrivateConversation(senderId: string, receiverId: string): Promise<{ data: any, status: number, message: string }>
     getGroupConversation(conversationId: string, senderId: string): Promise<{ data: any, status: number, message: string }>
-    getConversationList(jwtToken: string, page: number, size: number): Promise<{data: any, status: number, message: string }>
+    getConversationList(jwtToken: string, size: number, date?: Date): Promise<{data: any, status: number, message: string }>
 }
 
 
@@ -41,7 +41,7 @@ export class ConversationService implements IConversationService {
                 user_id: senderId,
                 conversation_id: conversation._id,
                 is_admin: true,
-                joined_time: new Date().toISOString()
+                joined_time: new Date()
             })
             const sendMember = await this._memberRepo.create(sendMemberDto)
             for (let receiverId in receiverIds) {
@@ -49,7 +49,7 @@ export class ConversationService implements IConversationService {
                     user_id: receiverId,
                     conversation_id: conversation._id,
                     is_admin: true,
-                    joined_time: new Date().toISOString()
+                    joined_time: new Date()
                 })
                 const receiveMember = await this._memberRepo.create(receiveMemberDto)
             }
@@ -83,18 +83,20 @@ export class ConversationService implements IConversationService {
         return { data: null, status: 0, message: 'Success' }
     }
 
-    public async getConversationList(jwtToken: string, page: number, size: number): Promise<{ data: any; status: number; message: string }> {
+    public async getConversationList(jwtToken: string, size: number, date?: Date): Promise<{ data: any; status: number; message: string }> {
         const userData = this._jwtToken.getUserInfo(jwtToken)
         try {
-            const condition = { user_ids: { $in: [userData.id] } }
+            const condition = { 
+                user_ids: { $in: [userData.id] },
+                latest_message_time: date ? { $lt: date } : { $lte: new Date() }
+            }
             const sort = { latest_message_time: -1 }
-            const offset = page * size
             const conversations = await this._conversationRepo.fetchPaginatedResults(
-                condition, offset, size, sort
+                condition, 0, size, sort
             )
             let response = []
             for(let conversation of conversations) {
-                const messages = await this._messageRepo.fetchMessagesByConversation(conversation._id.toString(), page, size)
+                const messages = await this._messageRepo.fetchMessagesByConversation(conversation._id.toString(), size)
                 let conversationData = {
                     _id: conversation._id,
                     conversation_name: conversation.conversation_name,
