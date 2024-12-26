@@ -86,26 +86,9 @@ export class ConversationService implements IConversationService {
     public async getConversationList(jwtToken: string, size: number, date?: Date): Promise<{ data: any; status: number; message: string }> {
         const userData = this._jwtToken.getUserInfo(jwtToken)
         try {
-            const condition = { 
-                user_ids: { $in: [userData.id] },
-                latest_message_time: date ? { $lt: date } : { $lte: new Date() }
-            }
-            const sort = { latest_message_time: -1 }
-            const conversations = await this._conversationRepo.fetchPaginatedResults(
-                condition, 0, size, sort
-            )
-            let response = []
-            for(let conversation of conversations) {
-                const messages = await this._messageRepo.fetchMessagesByConversation(conversation._id.toString(), size)
-                let conversationData = {
-                    _id: conversation._id,
-                    conversation_name: conversation.conversation_name,
-                    conversation_type: conversation.conversation_type,
-                    image: conversation.image,
-                    created_date: conversation.created_date,
-                    messages
-                }
-                response.push(conversationData)
+            const response = await this._conversationRepo.fetchConversations(userData.id, size)
+            for(let conversation of response) {
+                conversation.messages.reverse()
             }
             return { data: response, status: 0, message: 'Success' }
         } catch (error) {
