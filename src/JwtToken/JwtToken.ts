@@ -29,4 +29,9 @@ export class Token{
         let userInfo = jwt.decode(realToken)
         return userInfo
     }
+
+    public getUser(token: string){   
+        let userInfo = jwt.decode(token)
+        return userInfo
+    }
 }

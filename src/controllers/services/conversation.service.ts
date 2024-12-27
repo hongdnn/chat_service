@@ -44,6 +44,7 @@ export class ConversationService implements IConversationService {
                 joined_time: new Date()
             })
             const sendMember = await this._memberRepo.create(sendMemberDto)
+            const members = [sendMember]
             for (let receiverId in receiverIds) {
                 const receiveMemberDto = new Member({
                     user_id: receiverId,
@@ -52,9 +53,10 @@ export class ConversationService implements IConversationService {
                     joined_time: new Date()
                 })
                 const receiveMember = await this._memberRepo.create(receiveMemberDto)
+                members.push(receiveMember)
             }
             if (conversation !== null) {
-                const responseData = { conversation, sender }
+                const responseData = { conversation, sender, members }
                 return { data: responseData, status: 0, message: 'Create conversation success' }
             }
         } catch (error) {

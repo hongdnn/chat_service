@@ -12,7 +12,7 @@ import { User } from "../../entities/user";
 
 
 export interface IMessageService {
-    sendMessage(message: string, message_type: string, sender: User, conversation: Conversation): Promise<{ data: any, status: number, message: string }>
+    sendMessage(message: string, message_type: string, sender: User, conversation: Conversation, members?: Member[]): Promise<{ data: any, status: number, message: string }>
 }
 
 
@@ -24,7 +24,7 @@ export class MessageService implements IMessageService {
     @inject(TYPES.IMemberRepository) private readonly _memberRepo: IMemberRepository
 
 
-    public async sendMessage(message: string, message_type: string, sender: User, conversation: Conversation): Promise<{ data: any; status: number; message: string; }> {
+    public async sendMessage(message: string, message_type: string, sender: User, conversation: Conversation, members?: Member[]): Promise<{ data: any; status: number; message: string; }> {
         try {
             const messageDto = new Message({
                 message: message,
@@ -54,11 +54,12 @@ export class MessageService implements IMessageService {
                         _id: conversation._id,
                         conversation_name: conversation.conversation_name,
                         image: conversation.image,
-                        conversation_type: conversation.conversation_type
+                        conversation_type: conversation.conversation_type,
+                        members
                     },
                     sender: {
-                        _id: sender._id, // userId
-                        member_id: member[0]._id,
+                        _id: member[0]._id,
+                        user_id: sender._id,
                         first_name: sender.first_name,
                         last_name: sender.last_name,
                         image: sender.image,

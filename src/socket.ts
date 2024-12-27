@@ -5,11 +5,13 @@ import { myContainer } from "./inversify.config";
 import { TYPES } from "./types";
 import { IConversationService } from "./controllers/services/conversation.service";
 import { Server as SocketIOServer } from "socket.io";
+import { Token } from "./JwtToken/JwtToken";
 
 const users = {}
 
 const messageService: IMessageService = myContainer.get<IMessageService>(TYPES.IMessageService)
 const conversationService: IConversationService = myContainer.get<IConversationService>(TYPES.IConversationService)
+const jwtToken: Token = myContainer.get<Token>(TYPES.Token)
 
 export const socketio = (server: Server) => {
     const io = new SocketIOServer(server, {
@@ -21,18 +23,28 @@ export const socketio = (server: Server) => {
         }
     })
 
+    /* middleware */
+    io.use((socket, next) => {
+        const token = socket.handshake.auth.token;
+        console.log(token)
+        const user = jwtToken.getUser(token);
+        if (user) {
+            console.log(`'user connected: ${user.id}, socket: ${socket.id}`)
+            users[user.id] = socket.id;
+            next();
+        } else {
+            next(new Error('Socket authentication error'));
+        }
+    });
+
     io.on('connection', (socket: Socket) => {
         console.log('a user connected:', socket.id)
 
-        socket.on('join', (data) => {
-            users[data.user_id] = socket.id
-        })
-
         // Send private message
         socket.on('private_message', async (data) => {
-            const { senderId, receiverId, message, message_type } = data
-            console.log(senderId, receiverId, message, message_type)
-            const conversationResult = await conversationService.getPrivateConversation(senderId, receiverId)
+            const { sender_id, receiver_id, message, message_type } = data
+            console.log(sender_id, receiver_id, message, message_type)
+            const conversationResult = await conversationService.getPrivateConversation(sender_id, receiver_id)
             const response = await messageService.sendMessage(message, message_type, conversationResult.data.sender, conversationResult.data.conversation)
             const room = conversationResult.data.conversation._id
 
@@ -40,7 +52,7 @@ export const socketio = (server: Server) => {
             if (!socket.rooms.has(room)) {
                 socket.join(room)
             }
-            const receiverSocket = users[receiverId]
+            const receiverSocket = users[receiver_id]
             if(receiverSocket != null) {
                 if (!receiverSocket.rooms.has(room)) {
                     receiverSocket.join(room)
@@ -71,7 +83,7 @@ export const socketio = (server: Server) => {
             const { senderId, conversation_id, message, message_type } = data
             const conversationResult = await conversationService.getGroupConversation(conversation_id, senderId)
             if (conversationResult != null) {
-                const response = await messageService.sendMessage(message, message_type, conversationResult.data.sender, conversationResult.data.comversation)
+                const response = await messageService.sendMessage(message, message_type, conversationResult.data.sender, conversationResult.data.comversation, conversationResult.data.members)
                 const room = conversation_id
 
                 // Join the room
