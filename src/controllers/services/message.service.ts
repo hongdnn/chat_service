@@ -13,6 +13,7 @@ import { User } from "../../entities/user";
 
 export interface IMessageService {
     sendMessage(message: string, message_type: string, sender: User, conversation: Conversation, members?: Member[]): Promise<{ data: any, status: number, message: string }>
+    fetchMessagesByConversation(conversationId: string, date: Date, size: number): Promise<{ data: any, status: number, message: string }>
 }
 
 
@@ -24,29 +25,27 @@ export class MessageService implements IMessageService {
     @inject(TYPES.IMemberRepository) private readonly _memberRepo: IMemberRepository
 
 
-    public async sendMessage(message: string, message_type: string, sender: User, conversation: Conversation, members?: Member[]): Promise<{ data: any; status: number; message: string; }> {
+    public async sendMessage(message: string, messageType: string, sender: User, conversation: Conversation, members?: Member[]): Promise<{ data: any; status: number; message: string; }> {
         try {
+            const member = await this._memberRepo.findByCondition({
+                conversation_id: conversation._id,
+                user_id: sender._id
+            })
             const messageDto = new Message({
                 message: message,
                 conversation_id: conversation._id,
-                user_id: sender._id,
-                message_type: message_type
+                member_id: member[0]._id,
+                message_type: messageType
             })
             const createdMessage = await this._messageRepo.create(messageDto);
-            const [_, member] = await Promise.all([
-                this._conversationRepo.update(conversation._id, {
+            await this._conversationRepo.update(conversation._id, {
                     latest_message_time: createdMessage.created_date
-                }),
-                this._memberRepo.findByCondition({
-                    conversation_id: conversation._id,
-                    user_id: sender._id
-                })
-            ])
+            })
             if (createdMessage !== null) {
                 const responseData = {
                     _id: createdMessage._id,
                     message: message,
-                    message_type: message_type,
+                    message_type: messageType,
                     created_date: createdMessage.created_date,
                     updated_date: createdMessage.updated_date,
                     status: createdMessage.status,
@@ -71,5 +70,16 @@ export class MessageService implements IMessageService {
         } catch (error) {
             return { data: {}, status: 1, message: error }
         }
+    }
+
+    public async fetchMessagesByConversation(conversationId: string, date: Date, size: number): Promise<{ data: any; status: number; message: string; }> {
+        try {
+            console.log(conversationId)
+            const response = await this._messageRepo.fetchMessagesByConversation(conversationId, size, date)
+            return {data: response, status: 0, message: 'Fetch messages success' }
+        } catch (error) {
+            return { data: {}, status: 1, message: error }
+        }
+        
     }
 }

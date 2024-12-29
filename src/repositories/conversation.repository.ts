@@ -165,7 +165,7 @@ export class ConversationRepository extends BaseRepository<Conversation> impleme
                                                                 $filter: {
                                                                     input: "$members",
                                                                     as: "member",
-                                                                    cond: { $eq: ["$$member.user_id", "$$message.user_id"] }
+                                                                    cond: { $eq: [{ $toString: "$$member._id" }, "$$message.member_id"] }
                                                                 }
                                                             },
                                                             0

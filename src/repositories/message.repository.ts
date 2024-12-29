@@ -1,7 +1,6 @@
 import { injectable } from "inversify";
 import { BaseRepository, IBaseRepository } from "./base.repository";
 import { Message } from "../entities/message";
-import { Date } from "mongoose";
 
 
 export interface IMessageRepository extends IBaseRepository<Message> {
@@ -15,74 +14,132 @@ export class MessageRepository
 {
   public async fetchMessagesByConversation(conversationId: string, limit: number, date?: Date): Promise<any[]> {
     const result = await this._mongooseModel.aggregate([
-        {
-            $match: {
-            conversation_id: conversationId,
-            created_date: date ? { $lt: date } : { $lte: new Date() },
-            },
+      {
+        $match: {
+          conversation_id: conversationId,
+          ...(date && { created_date: { $lt: date } }),
         },
-        { $sort: { created_date: -1 } },
-        { $limit: limit },
+      },
+      { $sort: { created_date: -1 } },
+      { $limit: limit },
 
-        {
-            $lookup: {
-            from: "members",
-            let: { userId: "$user_id", conversationId: "$conversation_id" },
-            pipeline: [
-                {
-                $match: {
-                    $expr: {
-                    $and: [
-                        { $eq: ["$user_id", "$$userId"] },
-                        { $eq: ["$conversation_id", "$$conversationId"] },
-                    ],
+      //Group all member_ids first
+      {
+        $group: {
+          _id: null,
+          messages: { $push: "$$ROOT" },
+          uniqueMemberIds: { $addToSet: "$member_id" },
+        },
+      },
+
+      // Single lookup to members collection
+      {
+        $lookup: {
+          from: "members",
+          let: { memberIds: "$uniqueMemberIds" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [{ $toString: "$_id" }, "$$memberIds"],
+                },
+              },
+            },
+          ],
+          as: "allMembers",
+        },
+      },
+
+      {
+        $set: {
+          uniqueUserIds: {
+            $reduce: {
+              input: "$allMembers",
+              initialValue: [],
+              in: {
+                $setUnion: ["$$value", ["$$this.user_id"]],
+              },
+            },
+          },
+        },
+      },
+
+      // Single lookup to users collection
+      {
+        $lookup: {
+          from: "users",
+          let: { userIds: "$uniqueUserIds" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: [{ $toString: "$_id" }, "$$userIds"],
+                },
+              },
+            },
+          ],
+          as: "allUsers",
+        },
+      },
+
+      { $unwind: "$messages" },
+      {
+        $project: {
+          _id: "$messages._id",
+          conversation_id: conversationId,
+          message_type: "$messages.message_type",
+          created_date: "$messages.created_date",
+          message: "$messages.message",
+          sender: {
+            $let: {
+              vars: {
+                member: {
+                  $first: {
+                    $filter: {
+                      input: "$allMembers",
+                      cond: {
+                        $eq: [
+                          { $toString: "$$this._id" },
+                          "$messages.member_id",
+                        ],
+                      },
                     },
+                  },
                 },
-                },
-            ],
-            as: "member",
-            },
-        },
-
-        { $unwind: { path: "$member", preserveNullAndEmptyArrays: true } },
-
-        {
-            $lookup: {
-            from: "users",
-            let: { userId: { $toObjectId: "$user_id" } },
-            pipeline: [
-                {
-                $match: {
-                    $expr: {
-                    $eq: ["$_id", "$$userId"],
+              },
+              in: {
+                $let: {
+                  vars: {
+                    user: {
+                      $first: {
+                        $filter: {
+                          input: "$allUsers",
+                          cond: {
+                            $eq: [
+                              { $toString: "$$this._id" },
+                              "$$member.user_id",
+                            ],
+                          },
+                        },
+                      },
                     },
+                  },
+                  in: {
+                    _id: { $toString: "$$user._id" },
+                    member_id: { $toString: "$$member._id" },
+                    first_name: "$$user.first_name",
+                    last_name: "$$user.last_name",
+                    image: "$$user.image",
+                    nick_name: "$$member.nick_name",
+                  },
                 },
-                },
-            ],
-            as: "user",
+              },
             },
+          },
         },
+      },
+    ]);
 
-        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-
-        {
-            $project: {
-            conversation_id: conversationId,
-            message: 1,
-            message_type: 1,
-            created_date: 1,
-            sender: {
-                _id: "$user._id",
-                member_id: "$member._id",
-                first_name: "$user.first_name",
-                last_name: "$user.last_name",
-                image: "$user.image",
-                nick_name: "$member.nick_name",
-            },
-            },
-        },
-        ]);
-
-        return result.reverse();
+    return result.reverse();
   }
 }

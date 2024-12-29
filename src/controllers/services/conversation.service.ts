@@ -88,7 +88,7 @@ export class ConversationService implements IConversationService {
     public async getConversationList(jwtToken: string, size: number, date?: Date): Promise<{ data: any; status: number; message: string }> {
         const userData = this._jwtToken.getUserInfo(jwtToken)
         try {
-            const response = await this._conversationRepo.fetchConversations(userData.id, size)
+            const response = await this._conversationRepo.fetchConversations(userData.id, size, date)
             for(let conversation of response) {
                 conversation.messages.reverse()
             }

@@ -21,7 +21,7 @@ export class Message {
     _id: string
     message: string
     conversation_id: string
-    user_id: string
+    member_id: string
     created_date: Date
     updated_date: Date
     status: number
@@ -31,7 +31,7 @@ export class Message {
         this._id = dto._id
         this.message = dto.message
         this.conversation_id = dto.conversation_id
-        this.user_id = dto.user_id
+        this.member_id = dto.member_id
         this.created_date = dto.created_date
         this.updated_date = dto.updated_date
         this.status = dto.status
@@ -48,7 +48,7 @@ const messageSchema = new Schema({
         type: String,
         require: true
     },
-    user_id: {
+    member_id: {
         type: String,
         require: true
     },
