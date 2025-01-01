@@ -20,10 +20,10 @@ userRouter.post('/register', celebrate(createUserDto), async (req: Request, res:
     try {
         const dto = req.body
         const result = await userService.registerUser(dto)
-        if(!result) {
-            return res.status(404).json({ message: 'This email is existed' })
+        if(result.status == 1) {
+            return res.status(200).json(result)
         }
-        return res.status(200).json()
+        return res.status(200).json(result)
     } catch(error) {
         return res.status(500).json({ error })
     }
@@ -31,10 +31,7 @@ userRouter.post('/register', celebrate(createUserDto), async (req: Request, res:
 
 userRouter.post('/login', celebrate(loginDto), async (req: Request, res: Response) => {
     try {
-
         const dto = req.body
-
-        
         const resultLogin = await userService.login(dto.email, dto.password)
         return res.status(200).json(resultLogin)
     } catch (error) {

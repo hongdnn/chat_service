@@ -11,7 +11,7 @@ import { Token } from "../../JwtToken/JwtToken";
 
 export interface IUserService {
     login(email: string, password: string): Promise<{ token: string, user: User, status: number, message: string }>
-    registerUser(user: User): Promise<boolean>
+    registerUser(user: User): Promise<{ status: number, message: string }>
 }
 
 
@@ -34,16 +34,16 @@ export class UserService implements IUserService {
         return { token: '', user: null, status: 1, message: 'Email or password maybe incorrect' }
     }
     
-    public async registerUser(user: User): Promise<boolean> {
+    public async registerUser(user: User): Promise<{ status: number, message: string }> {
         const checkExsitedUser = await this._userRepo.getUserByEmail(user.email)
         if (checkExsitedUser === null) {
             user.status = 'active'
             const passwordHash = await bcrypt.hash(user.password, Bcrypt.SaltRound)
             user.password = passwordHash
             await this._userRepo.create(user)
-            return true;
+            return { status: 0, message: 'Login success' };
         }
-        return false;
+        return { status: 1, message: 'This email is existed' };
 
     }
     
